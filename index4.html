@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CV Builder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@7.5.0/build/index.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp39caeutkzjqp3ws4g.min.js" referrerpolicy="origin"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background: #f8f9fa;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 20px;
+    }
+    textarea, input, select {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row input {
+      flex: 1;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 20px 10px 0 0;
+      cursor: pointer;
+      font-size: 14px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .dynamic-group {
+      position: relative;
+      margin-top: 10px;
+    }
+    .remove-btn {
+      margin-top: 10px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <h1>CV Builder</h1>
+
+  <label>Name:</label>
+  <input type="text" id="name">
+
+  <label>Contact Number:</label>
+  <div class="row">
+    <input type="text" placeholder="+91" id="countryCode" style="max-width: 80px">
+    <input type="text" placeholder="1234567890" id="contact">
+  </div>
+
+  <label>Email:</label>
+  <input type="email" id="email">
+
+  <label>LinkedIn:</label>
+  <input type="text" id="linkedin">
+
+  <label>Professional Summary:</label>
+  <textarea id="summary"></textarea>
+
+  <label>Work Experience:</label>
+  <div id="experience-container"></div>
+  <button onclick="addSection('experience')">+ Add Experience</button>
+  <button onclick="removeLastSection('experience')" id="remove-experience" class="remove-btn" style="display:none">− Remove Experience</button>
+
+  <label>Education:</label>
+  <div id="education-container"></div>
+  <button onclick="addSection('education')">+ Add Education</button>
+  <button onclick="removeLastSection('education')" id="remove-education" class="remove-btn" style="display:none">− Remove Education</button>
+
+  <label>Skills:</label>
+  <textarea id="skills"></textarea>
+
+  <label>Certifications:</label>
+  <textarea id="certifications"></textarea>
+
+  <label>Projects:</label>
+  <textarea id="projects"></textarea>
+
+  <label>Languages (optional):</label>
+  <textarea id="languages"></textarea>
+
+  <label>Publications (for academics):</label>
+  <textarea id="publications"></textarea>
+
+  <button onclick="generateDoc()">Save as DOC</button>
+  <button onclick="generatePDF()">Save as PDF</button>
+
+  <script>
+    function initTiny(id) {
+      tinymce.init({
+        selector: `#${id}`,
+        menubar: false,
+        plugins: 'lists link',
+        toolbar: 'bold italic underline | bullist numlist | link',
+        setup: (editor) => {
+          editor.on('change', () => {
+            editor.save();
+          });
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ['summary', 'skills', 'certifications', 'projects', 'languages', 'publications'].forEach(id => initTiny(id));
+    });
+
+    const addSection = (type) => {
+      const container = document.getElementById(`${type}-container`);
+      const id = `${type}-${Date.now()}`;
+      const div = document.createElement('div');
+      div.className = 'dynamic-group';
+      div.innerHTML = `
+        <input type="text" placeholder="Title" class="title">
+        <input type="text" placeholder="Company/Institution" class="company">
+        <input type="text" placeholder="From" class="from">
+        <input type="text" placeholder="To" class="to">
+        <textarea id="${id}"></textarea>
+      `;
+      container.appendChild(div);
+      initTiny(id);
+      document.getElementById(`remove-${type}`).style.display = container.children.length > 0 ? 'inline-block' : 'none';
+    };
+
+    const removeLastSection = (type) => {
+      const container = document.getElementById(`${type}-container`);
+      const groups = container.querySelectorAll('.dynamic-group');
+      if (groups.length > 0) {
+        const lastGroup = groups[groups.length - 1];
+        const textarea = lastGroup.querySelector('textarea');
+        if (tinymce.get(textarea.id)) tinymce.get(textarea.id).remove();
+        container.removeChild(lastGroup);
+      }
+      document.getElementById(`remove-${type}`).style.display = container.children.length > 0 ? 'inline-block' : 'none';
+    };
+
+    function stripHTML(html) {
+      var tmp = document.createElement("DIV");
+      tmp.innerHTML = html;
+      return tmp.textContent || tmp.innerText || "";
+    }
+
+    async function generateDoc() {
+      const { Document, Packer, Paragraph, TextRun } = window.docx;
+      const doc = new Document();
+
+      const sections = [];
+      const pushText = (label, value) => {
+        if (value && value.trim() !== '') {
+          sections.push(new Paragraph({ children: [new TextRun({ text: `${label}: ${value}`, bold: true })] }));
+        }
+      };
+
+      pushText("Name", document.getElementById("name").value);
+      pushText("Contact", document.getElementById("countryCode").value + ' ' + document.getElementById("contact").value);
+      pushText("Email", document.getElementById("email").value);
+      pushText("LinkedIn", document.getElementById("linkedin").value);
+
+      const summary = tinymce.get("summary").getContent();
+      if (summary) sections.push(new Paragraph({ children: [new TextRun({ text: stripHTML(summary) })] }));
+
+      const processSection = (containerId, sectionTitle) => {
+        const container = document.getElementById(containerId);
+        if (container.children.length > 0) {
+          sections.push(new Paragraph({ children: [new TextRun({ text: sectionTitle, bold: true })] }));
+        }
+        container.querySelectorAll('.dynamic-group').forEach(group => {
+          const title = group.querySelector('.title')?.value;
+          const company = group.querySelector('.company')?.value;
+          const from = group.querySelector('.from')?.value;
+          const to = group.querySelector('.to')?.value;
+          const content = group.querySelector('textarea');
+          const value = tinymce.get(content.id)?.getContent();
+          const text = `${title || ''} at ${company || ''} (${from || ''} - ${to || ''})\n${stripHTML(value || '')}`;
+          sections.push(new Paragraph(text));
+        });
+      };
+
+      processSection('experience-container', 'Work Experience');
+      processSection('education-container', 'Education');
+
+      const fields = ['skills', 'certifications', 'projects', 'languages', 'publications'];
+      fields.forEach(id => {
+        const content = tinymce.get(id)?.getContent();
+        if (content) sections.push(new Paragraph({ children: [new TextRun(stripHTML(content))] }));
+      });
+
+      doc.addSection({ children: sections });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, "cv.docx");
+    }
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("PDF export not implemented in this example.", 10, 10);
+      doc.save("cv.pdf");
+    }
+  </script>
+</body>
+</html>
