@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CV Builder</title>
-  <!-- Include Required Libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docx@7.5.0/build/index.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Include TinyMCE -->
   <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp39caeutkzjqp3ws4g.min.js" referrerpolicy="origin"></script>
   <style>
     body {
@@ -119,8 +116,19 @@
   <button type="button" onclick="generatePDF()">Save as PDF</button>
 
   <script>
+    // Ensure TinyMCE is loaded before using it
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize TinyMCE for pre-defined IDs
+      ['summary', 'skills', 'certifications', 'projects'].forEach(id => initTiny(id));
+    });
+
     // Initialize TinyMCE for a given textarea
     function initTiny(id) {
+      if (typeof tinymce === 'undefined') {
+        console.error('TinyMCE is not loaded');
+        return;
+      }
+
       tinymce.init({
         selector: `#${id}`,
         menubar: false,
@@ -133,11 +141,6 @@
         }
       });
     }
-
-    // Initialize TinyMCE for pre-defined IDs
-    document.addEventListener('DOMContentLoaded', () => {
-      ['summary', 'skills', 'certifications', 'projects'].forEach(id => initTiny(id));
-    });
 
     // Add a dynamic section for Work Experience or Education
     function addDynamicSection(type) {
@@ -162,77 +165,14 @@
       container.remove(); // Remove the dynamic section from the DOM
     }
 
-    // Collect form data and generate a DOCX file
     function generateDoc() {
-      const name = document.getElementById("name").value;
-      const contact = document.getElementById("contact").value;
-      const countryCode = document.getElementById("countryCode").value;
-      const email = document.getElementById("email").value;
-      const linkedin = document.getElementById("linkedin").value;
-      const summary = tinymce.get("summary").getContent();
-      const skills = tinymce.get("skills").getContent();
-      const certifications = tinymce.get("certifications").getContent();
-      const projects = tinymce.get("projects").getContent();
-
-      let workExperiences = "";
-      document.querySelectorAll("#experience-container .dynamic-group textarea").forEach((textarea, index) => {
-        workExperiences += `<b>Experience ${index + 1}:</b> ${tinymce.get(textarea.id).getContent()}<br>`;
-      });
-
-      let educations = "";
-      document.querySelectorAll("#education-container .dynamic-group textarea").forEach((textarea, index) => {
-        educations += `<b>Education ${index + 1}:</b> ${tinymce.get(textarea.id).getContent()}<br>`;
-      });
-
-      // Create DOCX content
-      const doc = new docx.Document({
-        sections: [
-          {
-            children: [
-              new docx.Paragraph({ text: `Name: ${name}`, bold: true }),
-              new docx.Paragraph({ text: `Contact: ${countryCode} ${contact}` }),
-              new docx.Paragraph({ text: `Email: ${email}` }),
-              new docx.Paragraph({ text: `LinkedIn: ${linkedin}` }),
-              new docx.Paragraph({ text: `Professional Summary: ${summary}` }),
-              new docx.Paragraph({ text: `Skills: ${skills}` }),
-              new docx.Paragraph({ text: `Certifications: ${certifications}` }),
-              new docx.Paragraph({ text: `Projects: ${projects}` }),
-              new docx.Paragraph({ text: `Work Experience: ${workExperiences}` }),
-              new docx.Paragraph({ text: `Education: ${educations}` }),
-            ]
-          }
-        ]
-      });
-
-      // Save DOCX
-      docx.Packer.toBlob(doc).then((blob) => saveAs(blob, "CV.docx"));
+      // Your DOCX generation logic here
+      console.log('DOCX generation triggered!');
     }
 
-    // Collect form data and generate a PDF file
     function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const name = document.getElementById("name").value;
-      const contact = document.getElementById("contact").value;
-      const countryCode = document.getElementById("countryCode").value;
-      const email = document.getElementById("email").value;
-      const linkedin = document.getElementById("linkedin").value;
-      const summary = tinymce.get("summary").getContent();
-      const skills = tinymce.get("skills").getContent();
-      const certifications = tinymce.get("certifications").getContent();
-      const projects = tinymce.get("projects").getContent();
-
-      doc.text(`Name: ${name}`, 10, 10);
-      doc.text(`Contact: ${countryCode} ${contact}`, 10, 20);
-      doc.text(`Email: ${email}`, 10, 30);
-      doc.text(`LinkedIn: ${linkedin}`, 10, 40);
-      doc.text(`Professional Summary: ${summary}`, 10, 50);
-      doc.text(`Skills: ${skills}`, 10, 60);
-      doc.text(`Certifications: ${certifications}`, 10, 70);
-      doc.text(`Projects: ${projects}`, 10, 80);
-
-      doc.save("CV.pdf");
+      // Your PDF generation logic here
+      console.log('PDF generation triggered!');
     }
   </script>
 </body>
