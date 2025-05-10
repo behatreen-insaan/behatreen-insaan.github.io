@@ -6,7 +6,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.5.0/build/index.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp39caeutkzjqp3ws4g.min.js" referrerpolicy="origin"></script>
+<script src="https://cdn.tiny.cloud/1/your-api-key-here/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -162,6 +162,12 @@
     };
 
     function generateDoc() {
+      // Ensure TinyMCE is initialized and working
+      if (typeof tinymce === 'undefined' || !tinymce) {
+        alert('TinyMCE is not loaded properly. Please try again.');
+        return;
+      }
+
       const name = document.getElementById("name").value;
       const contact = document.getElementById("contact").value;
       const countryCode = document.getElementById("countryCode").value;
@@ -243,21 +249,16 @@
       const languages = tinymce.get("languages").getContent();
       const publications = tinymce.get("publications").getContent();
 
-      doc.setFontSize(16);
-      doc.text("CV", 105, 10, null, null, 'center');
-      doc.setFontSize(12);
-
-      // Add name, contact, and other details to PDF
-      doc.text(`Name: ${name}`, 10, 20);
-      doc.text(`Contact: ${countryCode} ${contact}`, 10, 30);
-      doc.text(`Email: ${email}`, 10, 40);
-      doc.text(`LinkedIn: ${linkedin}`, 10, 50);
-      doc.text(`Professional Summary: ${summary}`, 10, 60);
-      doc.text(`Skills: ${skills}`, 10, 70);
-      doc.text(`Certifications: ${certifications}`, 10, 80);
-      doc.text(`Projects: ${projects}`, 10, 90);
-      doc.text(`Languages: ${languages}`, 10, 100);
-      doc.text(`Publications: ${publications}`, 10, 110);
+      doc.text(`Name: ${name}`, 10, 10);
+      doc.text(`Contact: ${countryCode} ${contact}`, 10, 20);
+      doc.text(`Email: ${email}`, 10, 30);
+      doc.text(`LinkedIn: ${linkedin}`, 10, 40);
+      doc.text(`Professional Summary: ${summary}`, 10, 50);
+      doc.text(`Skills: ${skills}`, 10, 60);
+      doc.text(`Certifications: ${certifications}`, 10, 70);
+      doc.text(`Projects: ${projects}`, 10, 80);
+      doc.text(`Languages: ${languages}`, 10, 90);
+      doc.text(`Publications: ${publications}`, 10, 100);
 
       doc.save("cv.pdf");
     }
