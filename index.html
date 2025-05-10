@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CV Builder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Add the TinyMCE script with your API key -->
+  <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp39caeutkzjqp3ws4g/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    textarea, input { width: 100%; margin-bottom: 15px; padding: 8px; font-size: 14px; }
+    button { padding: 10px 15px; margin-right: 10px; cursor: pointer; font-size: 14px; }
+    .input-group { display: flex; justify-content: space-between; }
+    .input-group input { width: 48%; }
+    .experience-section { margin-bottom: 20px; }
+    .experience-section input { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>CV Builder</h1>
+
+  <!-- Personal Information -->
+  <label>Name:</label>
+  <input type="text" id="name" placeholder="Enter your name">
+
+  <label>Contact:</label>
+  <input type="text" id="contact" placeholder="Enter your contact number">
+
+  <label>Email:</label>
+  <input type="email" id="email" placeholder="Enter your email">
+
+  <label>LinkedIn URL:</label>
+  <input type="url" id="linkedin" placeholder="Enter your LinkedIn URL">
+
+  <!-- WYSIWYG Editor for Summary, Experience, etc. -->
+  <label>Professional Summary:</label>
+  <textarea id="summary"></textarea>
+
+  <label>Work Experience:</label>
+  <div class="experience-section">
+    <label>Job Title:</label>
+    <input type="text" id="job_title" placeholder="Enter your job title">
+    
+    <label>Company:</label>
+    <input type="text" id="company" placeholder="Enter company name">
+    
+    <label>From Date:</label>
+    <input type="date" id="from_date">
+    
+    <label>To Date (or Present):</label>
+    <input type="date" id="to_date">
+    <input type="checkbox" id="present"> Present
+
+    <label>Experience Description:</label>
+    <textarea id="experience_description"></textarea>
+  </div>
+
+  <label>Education:</label>
+  <textarea id="education"></textarea>
+
+  <label>Skills:</label>
+  <textarea id="skills"></textarea>
+
+  <label>Certifications:</label>
+  <textarea id="certifications"></textarea>
+
+  <label>Projects:</label>
+  <textarea id="projects"></textarea>
+
+  <label>Languages (optional):</label>
+  <textarea id="languages"></textarea>
+
+  <label>Publications (for academics):</label>
+  <textarea id="publications"></textarea>
+
+  <button onclick="generateDoc()">Save as DOC</button>
+  <button onclick="generatePDF()">Save as PDF</button>
+
+  <script>
+    // Initialize TinyMCE for WYSIWYG editors
+    tinymce.init({
+      selector: 'textarea',  // Apply to all textarea elements
+      plugins: 'advlist autolink lists link image charmap print preview anchor', 
+      toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | code'
+    });
+
+    async function generateDoc() {
+      const fields = [
+        ['Professional Summary', 'summary'],
+        ['Work Experience', 'experience_description'],
+        ['Education', 'education'],
+        ['Skills', 'skills'],
+        ['Certifications', 'certifications'],
+        ['Projects', 'projects'],
+        ['Languages', 'languages'],
+        ['Publications', 'publications']
+      ];
+
+      // Get Name, Contact, Email, and LinkedIn
+      const name = document.getElementById('name').value;
+      const contact = document.getElementById('contact').value;
+      const email = document.getElementById('email').value;
+      const linkedin = document.getElementById('linkedin').value;
+
+      // Get Work Experience Fields
+      const jobTitle = document.getElementById('job_title').value;
+      const company = document.getElementById('company').value;
+      const fromDate = document.getElementById('from_date').value;
+      const toDate = document.getElementById('to_date').value || 'Present';
+      const isPresent = document.getElementById('present').checked;
+      const experienceDescription = tinymce.get('experience_description').getContent();
+
+      // HTML content to be added to the DOC
+      let content = `
+        <html>
+        <head><style>body { font-family: Arial, sans-serif; }</style></head>
+        <body>
+          <h2>${name}</h2>
+          <p><strong>Contact:</strong> ${contact}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>LinkedIn:</strong> <a href="${linkedin}" target="_blank">${linkedin}</a></p>
+          <br>
+          <h3>Work Experience</h3>
+          <p><strong>Job Title:</strong> ${jobTitle}</p>
+          <p><strong>Company:</strong> ${company}</p>
+          <p><strong>From:</strong> ${fromDate} <strong>To:</strong> ${toDate}</p>
+          <p><strong>Description:</strong> ${experienceDescription.replace(/\n/g, '<br>')}</p>
+      `;
+
+      // Adding other sections to the document
+      fields.forEach(([title, id]) => {
+        const value = tinymce.get(id).getContent();
+        if (value.trim()) {
+          content += `<h3>${title}</h3>`;
+          content += `<p>${value.replace(/\n/g, '<br>')}</p>`;
+        }
+      });
+
+      content += '</body></html>';
+
+      // Save as .doc
+      const blob = new Blob([content], { type: 'application/msword' });
+      saveAs(blob, "CV.doc");
+    }
+
+    async function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFont("helvetica", "normal");
+
+      const fields = [
+        ['Professional Summary', 'summary'],
+        ['Work Experience', 'experience_description'],
+        ['Education', 'education'],
+        ['Skills', 'skills'],
+        ['Certifications', 'certifications'],
+        ['Projects', 'projects'],
+        ['Languages', 'languages'],
+        ['Publications', 'publications']
+      ];
+
+      let y = 10;
+
+      // Name, Contact, Email, and LinkedIn
+      const name = document.getElementById('name').value;
+      const contact = document.getElementById('contact').value;
+      const email = document.getElementById('email').value;
+      const linkedin = document.getElementById('linkedin').value;
+
+      doc.setFontSize(18);
+      doc.text(name, 10, y);
+      y += 10;
+      doc.setFontSize(12);
+      doc.text(`Contact: ${contact}`, 10, y);
+      y += 6;
+      doc.text(`Email: ${email}`, 10, y);
+      y += 6;
+      doc.text(`LinkedIn: ${linkedin}`, 10, y);
+      y += 10;
+
+      // Adding Work Experience section
+      const jobTitle = document.getElementById('job_title').value;
+      const company = document.getElementById('company').value;
+      const fromDate = document.getElementById('from_date').value;
+      const toDate = document.getElementById('to_date').value || 'Present';
+      doc.setFontSize(14);
+      doc.text("Work Experience", 10, y);
+      y += 7;
+      doc.setFontSize(12);
+      doc.text(`Job Title: ${jobTitle}`, 10, y);
+      y += 6;
+      doc.text(`Company: ${company}`, 10, y);
+      y += 6;
+      doc.text(`From: ${fromDate} To: ${toDate}`, 10, y);
+      y += 6;
+
+      // Adding other sections
+      fields.forEach(([title, id]) => {
+        const value = tinymce.get(id).getContent();
+        if (value.trim()) {
+          doc.setFontSize(14);
+          doc.text(title, 10, y);
+          y += 7;
+          doc.setFontSize(11);
+          const lines = doc.splitTextToSize(value, 180);
+          doc.text(lines, 10, y);
+          y += lines.length * 6 + 4;
+        }
+      });
+
+      doc.save("CV.pdf");
+    }
+  </script>
+</body>
+</html>
