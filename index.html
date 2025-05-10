@@ -3,68 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <title>CV Builder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@7.5.0/build/index.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp39caeutkzjqp3ws4g/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+  <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    textarea, input { width: 100%; margin-bottom: 15px; padding: 8px; font-size: 14px; }
-    button { padding: 10px 15px; margin-right: 10px; cursor: pointer; font-size: 14px; }
-    .work-experience, .education { margin-bottom: 15px; }
-    .section { display: flex; align-items: center; }
-    .section input { margin-right: 5px; }
-    .section button { margin-left: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background: #f8f9fa;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 20px;
+    }
+    textarea, input, select {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row input {
+      flex: 1;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 20px 10px 0 0;
+      cursor: pointer;
+      font-size: 14px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .dynamic-group {
+      position: relative;
+      margin-top: 10px;
+    }
+    .remove-btn {
+      margin-top: 10px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      background-color: #c82333;
+    }
   </style>
 </head>
 <body>
   <h1>CV Builder</h1>
 
   <label>Name:</label>
-  <input type="text" id="name" placeholder="Enter your name">
+  <input type="text" id="name">
 
-  <label>Contact:</label>
-  <div class="section">
-    <select id="country-code">
-      <option value="+60">+60 (Malaysia)</option>
-      <option value="+1">+1 (USA)</option>
-      <option value="+44">+44 (UK)</option>
-      <option value="+91">+91 (India)</option>
-      <!-- Add more country codes as needed -->
-    </select>
-    <input type="text" id="contact" placeholder="Enter your contact number">
+  <label>Contact Number:</label>
+  <div class="row">
+    <input type="text" placeholder="+91" id="countryCode" style="max-width: 80px">
+    <input type="text" placeholder="1234567890" id="contact">
   </div>
 
   <label>Email:</label>
-  <input type="email" id="email" placeholder="Enter your email">
+  <input type="email" id="email">
 
-  <label>Social Media Link:</label>
-  <input type="url" id="social-media" placeholder="Enter your social media link">
+  <label>LinkedIn:</label>
+  <input type="text" id="linkedin">
 
   <label>Professional Summary:</label>
   <textarea id="summary"></textarea>
 
   <label>Work Experience:</label>
-  <div id="work-experience-container">
-    <div class="work-experience">
-      <input type="text" placeholder="Job Title">
-      <input type="text" placeholder="Company">
-      <input type="date" placeholder="From Date">
-      <input type="date" placeholder="To Date">
-      <button onclick="removeWorkExperience(this)">Delete</button>
-    </div>
-  </div>
-  <button onclick="addWorkExperience()">Add Work Experience</button>
+  <div id="experience-container"></div>
+  <button onclick="addSection('experience')">+ Add Experience</button>
+  <button id="removeExperienceButton" onclick="removeLastSection('experience')" class="remove-btn" style="display:none;">− Remove Experience</button>
 
   <label>Education:</label>
-  <div id="education-container">
-    <div class="education">
-      <input type="text" placeholder="Degree/Qualification">
-      <input type="text" placeholder="Institution">
-      <input type="date" placeholder="Start Date">
-      <input type="date" placeholder="End Date">
-      <button onclick="removeEducation(this)">Delete</button>
-    </div>
-  </div>
-  <button onclick="addEducation()">Add Education</button>
+  <div id="education-container"></div>
+  <button onclick="addSection('education')">+ Add Education</button>
+  <button id="removeEducationButton" onclick="removeLastSection('education')" class="remove-btn" style="display:none;">− Remove Education</button>
 
   <label>Skills:</label>
   <textarea id="skills"></textarea>
@@ -81,173 +116,63 @@
   <label>Publications (for academics):</label>
   <textarea id="publications"></textarea>
 
+  <button onclick="generateDoc()">Save as DOC</button>
   <button onclick="generatePDF()">Save as PDF</button>
 
   <script>
-    async function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.setFont("helvetica", "normal");
-
-      const name = document.getElementById('name').value;
-      const contact = document.getElementById('country-code').value + ' ' + document.getElementById('contact').value;
-      const email = document.getElementById('email').value;
-      const socialMedia = document.getElementById('social-media').value;
-      const summary = document.getElementById('summary').value;
-      const skills = document.getElementById('skills').value;
-      const certifications = document.getElementById('certifications').value;
-      const projects = document.getElementById('projects').value;
-      const languages = document.getElementById('languages').value;
-      const publications = document.getElementById('publications').value;
-
-      const workExperience = Array.from(document.getElementsByClassName('work-experience')).map(work => ({
-        title: work.querySelector('input:nth-child(1)').value,
-        company: work.querySelector('input:nth-child(2)').value,
-        fromDate: work.querySelector('input:nth-child(3)').value,
-        toDate: work.querySelector('input:nth-child(4)').value,
-      }));
-
-      const educationEntries = Array.from(document.getElementsByClassName('education')).map(edu => ({
-        degree: edu.querySelector('input:nth-child(1)').value,
-        institution: edu.querySelector('input:nth-child(2)').value,
-        startDate: edu.querySelector('input:nth-child(3)').value,
-        endDate: edu.querySelector('input:nth-child(4)').value,
-      }));
-
-      let y = 10;
-
-      // Add Name, Contact, Email, Social Media
-      doc.setFontSize(16);
-      doc.text(name, 10, y);
-      y += 10;
-      doc.setFontSize(12);
-      doc.text(`Contact: ${contact}`, 10, y);
-      y += 5;
-      doc.text(`Email: ${email}`, 10, y);
-      y += 5;
-      doc.text(`Social Media: ${socialMedia}`, 10, y);
-      y += 10;
-
-      // Add Professional Summary
-      if (summary.trim()) {
-        doc.setFontSize(14);
-        doc.text("Professional Summary:", 10, y);
-        y += 7;
-        doc.setFontSize(11);
-        doc.text(summary, 10, y);
-        y += 10;
-      }
-
-      // Add Work Experience
-      if (workExperience.length > 0) {
-        doc.setFontSize(14);
-        doc.text("Work Experience:", 10, y);
-        y += 7;
-        workExperience.forEach(work => {
-          doc.setFontSize(12);
-          doc.text(`${work.title} at ${work.company} (${work.fromDate} to ${work.toDate})`, 10, y);
-          y += 7;
-        });
-        y += 10;
-      }
-
-      // Add Education
-      if (educationEntries.length > 0) {
-        doc.setFontSize(14);
-        doc.text("Education:", 10, y);
-        y += 7;
-        educationEntries.forEach(edu => {
-          doc.setFontSize(12);
-          doc.text(`${edu.degree} from ${edu.institution} (${edu.startDate} to ${edu.endDate})`, 10, y);
-          y += 7;
-        });
-        y += 10;
-      }
-
-      // Add Skills, Certifications, Projects, Languages, and Publications
-      if (skills.trim()) {
-        doc.setFontSize(14);
-        doc.text("Skills:", 10, y);
-        y += 7;
-        doc.setFontSize(12);
-        doc.text(skills, 10, y);
-        y += 10;
-      }
-
-      if (certifications.trim()) {
-        doc.setFontSize(14);
-        doc.text("Certifications:", 10, y);
-        y += 7;
-        doc.setFontSize(12);
-        doc.text(certifications, 10, y);
-        y += 10;
-      }
-
-      if (projects.trim()) {
-        doc.setFontSize(14);
-        doc.text("Projects:", 10, y);
-        y += 7;
-        doc.setFontSize(12);
-        doc.text(projects, 10, y);
-        y += 10;
-      }
-
-      if (languages.trim()) {
-        doc.setFontSize(14);
-        doc.text("Languages:", 10, y);
-        y += 7;
-        doc.setFontSize(12);
-        doc.text(languages, 10, y);
-        y += 10;
-      }
-
-      if (publications.trim()) {
-        doc.setFontSize(14);
-        doc.text("Publications:", 10, y);
-        y += 7;
-        doc.setFontSize(12);
-        doc.text(publications, 10, y);
-        y += 10;
-      }
-
-      doc.save("CV.doc");
+    function initTiny(id) {
+      tinymce.init({
+        selector: `#${id}`,
+        menubar: false,
+        plugins: 'lists link',
+        toolbar: 'bold italic underline | bullist numlist | link',
+        setup: (editor) => {
+          editor.on('change', () => {
+            editor.save();
+          });
+        }
+      });
     }
 
-    function addWorkExperience() {
-      const container = document.getElementById('work-experience-container');
-      const workExperienceDiv = document.createElement('div');
-      workExperienceDiv.classList.add('work-experience');
-      workExperienceDiv.innerHTML = `
-        <input type="text" placeholder="Job Title">
-        <input type="text" placeholder="Company">
-        <input type="date" placeholder="From Date">
-        <input type="date" placeholder="To Date">
-        <button onclick="removeWorkExperience(this)">Delete</button>
+    document.addEventListener('DOMContentLoaded', () => {
+      ['summary', 'skills', 'certifications', 'projects', 'languages', 'publications'].forEach(id => initTiny(id));
+    });
+
+    const addSection = (type) => {
+      const container = document.getElementById(`${type}-container`);
+      const id = `${type}-${Date.now()}`;
+      const div = document.createElement('div');
+      div.className = 'dynamic-group';
+      div.innerHTML = `
+        <textarea id="${id}"></textarea>
       `;
-      container.appendChild(workExperienceDiv);
-    }
+      container.appendChild(div);
+      initTiny(id);
+      toggleRemoveButton(type);
+    };
 
-    function removeWorkExperience(button) {
-      button.parentElement.remove();
-    }
+    const removeLastSection = (type) => {
+      const container = document.getElementById(`${type}-container`);
+      const groups = container.querySelectorAll('.dynamic-group');
+      if (groups.length > 0) {
+        const lastGroup = groups[groups.length - 1];
+        const textarea = lastGroup.querySelector('textarea');
+        if (tinymce.get(textarea.id)) tinymce.get(textarea.id).remove();
+        container.removeChild(lastGroup);
+      }
+      toggleRemoveButton(type);
+    };
 
-    function addEducation() {
-      const container = document.getElementById('education-container');
-      const educationDiv = document.createElement('div');
-      educationDiv.classList.add('education');
-      educationDiv.innerHTML = `
-        <input type="text" placeholder="Degree/Qualification">
-        <input type="text" placeholder="Institution">
-        <input type="date" placeholder="Start Date">
-        <input type="date" placeholder="End Date">
-        <button onclick="removeEducation(this)">Delete</button>
-      `;
-      container.appendChild(educationDiv);
-    }
-
-    function removeEducation(button) {
-      button.parentElement.remove();
-    }
+    const toggleRemoveButton = (type) => {
+      const container = document.getElementById(`${type}-container`);
+      const groups = container.querySelectorAll('.dynamic-group');
+      const removeButton = document.getElementById(`remove${type.charAt(0).toUpperCase() + type.slice(1)}Button`);
+      if (groups.length > 1) {
+        removeButton.style.display = 'inline-block';
+      } else {
+        removeButton.style.display = 'none';
+      }
+    };
   </script>
 </body>
 </html>
