@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CV Builder</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@7.5.0/build/index.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp39caeutkzjqp3ws4g.min.js" referrerpolicy="origin"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background: #f8f9fa;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 20px;
+    }
+    textarea, input, select {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row input {
+      flex: 1;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 20px 10px 0 0;
+      cursor: pointer;
+      font-size: 14px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .dynamic-group {
+      position: relative;
+      margin-top: 10px;
+    }
+    .remove-btn {
+      margin-top: 10px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <h1>CV Builder</h1>
+
+  <label>Name:</label>
+  <input type="text" id="name">
+
+  <label>Contact Number:</label>
+  <div class="row">
+    <input type="text" placeholder="+91" id="countryCode" style="max-width: 80px">
+    <input type="text" placeholder="1234567890" id="contact">
+  </div>
+
+  <label>Email:</label>
+  <input type="email" id="email">
+
+  <label>LinkedIn:</label>
+  <input type="text" id="linkedin">
+
+  <label>Professional Summary:</label>
+  <textarea id="summary"></textarea>
+
+  <label>Work Experience:</label>
+  <div id="experience-container"></div>
+  <button onclick="addSection('experience')">+ Add Experience</button>
+  <button onclick="removeLastSection('experience')" class="remove-btn">− Remove Experience</button>
+
+  <label>Education:</label>
+  <div id="education-container"></div>
+  <button onclick="addSection('education')">+ Add Education</button>
+  <button onclick="removeLastSection('education')" class="remove-btn">− Remove Education</button>
+
+  <label>Skills:</label>
+  <textarea id="skills"></textarea>
+
+  <label>Certifications:</label>
+  <textarea id="certifications"></textarea>
+
+  <label>Projects:</label>
+  <textarea id="projects"></textarea>
+
+  <label>Languages (optional):</label>
+  <textarea id="languages"></textarea>
+
+  <label>Publications (for academics):</label>
+  <textarea id="publications"></textarea>
+
+  <button onclick="generateDoc()">Save as DOCX</button>
+  <button onclick="generatePDF()">Save as PDF</button>
+
+  <script>
+    function initTiny(id) {
+      tinymce.init({
+        selector: `#${id}`,
+        menubar: false,
+        plugins: 'lists link',
+        toolbar: 'bold italic underline | bullist numlist | link',
+        setup: (editor) => {
+          editor.on('change', () => {
+            editor.save();
+          });
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ['summary', 'skills', 'certifications', 'projects', 'languages', 'publications'].forEach(id => initTiny(id));
+    });
+
+    const addSection = (type) => {
+      const container = document.getElementById(`${type}-container`);
+      const id = `${type}-${Date.now()}`;
+      const div = document.createElement('div');
+      div.className = 'dynamic-group';
+      div.innerHTML = `
+        <textarea id="${id}"></textarea>
+      `;
+      container.appendChild(div);
+      initTiny(id);
+    };
+
+    const removeLastSection = (type) => {
+      const container = document.getElementById(`${type}-container`);
+      const groups = container.querySelectorAll('.dynamic-group');
+      if (groups.length > 0) {
+        const lastGroup = groups[groups.length - 1];
+        const textarea = lastGroup.querySelector('textarea');
+        if (tinymce.get(textarea.id)) tinymce.get(textarea.id).remove();
+        container.removeChild(lastGroup);
+      }
+    };
+
+    function generateDoc() {
+      const name = document.getElementById("name").value;
+      const contact = document.getElementById("contact").value;
+      const countryCode = document.getElementById("countryCode").value;
+      const email = document.getElementById("email").value;
+      const linkedin = document.getElementById("linkedin").value;
+      const summary = tinymce.get("summary").getContent();
+      const skills = tinymce.get("skills").getContent();
+      const certifications = tinymce.get("certifications").getContent();
+      const projects = tinymce.get("projects").getContent();
+      const languages = tinymce.get("languages").getContent();
+      const publications = tinymce.get("publications").getContent();
+
+      let workExperience = "";
+      document.querySelectorAll("#experience-container .dynamic-group").forEach((group, index) => {
+        const textArea = group.querySelector("textarea");
+        if (textArea) {
+          workExperience += `<b>Work Experience ${index + 1}:</b><br>${tinymce.get(textArea.id).getContent()}<br><br>`;
+        }
+      });
+
+      let education = "";
+      document.querySelectorAll("#education-container .dynamic-group").forEach((group, index) => {
+        const textArea = group.querySelector("textarea");
+        if (textArea) {
+          education += `<b>Education ${index + 1}:</b><br>${tinymce.get(textArea.id).getContent()}<br><br>`;
+        }
+      });
+
+      // Create a new document using docx API
+      const doc = new docx.Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new docx.Paragraph(name),
+              new docx.Paragraph(`Contact: ${countryCode} ${contact}`),
+              new docx.Paragraph(`Email: ${email}`),
+              new docx.Paragraph(`LinkedIn: ${linkedin}`),
+              new docx.Paragraph("Professional Summary:"),
+              new docx.Paragraph(summary),
+              new docx.Paragraph("Skills:"),
+              new docx.Paragraph(skills),
+              new docx.Paragraph("Certifications:"),
+              new docx.Paragraph(certifications),
+              new docx.Paragraph("Projects:"),
+              new docx.Paragraph(projects),
+              new docx.Paragraph("Languages:"),
+              new docx.Paragraph(languages),
+              new docx.Paragraph("Publications:"),
+              new docx.Paragraph(publications),
+              new docx.Paragraph("Work Experience:"),
+              new docx.Paragraph(workExperience),
+              new docx.Paragraph("Education:"),
+              new docx.Paragraph(education),
+            ],
+          },
+        ],
+      });
+
+      // Save the document as a .docx file
+      docx.Packer.toBlob(doc).then((blob) => {
+        saveAs(blob, "cv.docx");
+      });
+    }
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const name = document.getElementById("name").value;
+      const contact = document.getElementById("contact").value;
+      const countryCode = document.getElementById("countryCode").value;
+      const email = document.getElementById("email").value;
+      const linkedin = document.getElementById("linkedin").value;
+      const summary = tinymce.get("summary").getContent();
+      const skills = tinymce.get("skills").getContent();
+      const certifications = tinymce.get("certifications").getContent();
+      const projects = tinymce.get("projects").getContent();
+      const languages = tinymce.get("languages").getContent();
+      const publications = tinymce.get("publications").getContent();
+
+      doc.setFontSize(16);
+      doc.text("CV", 105, 10, null, null, 'center');
+      doc.setFontSize(12);
+
+      // Add name, contact, and other details to PDF
+      doc.text(`Name: ${name}`, 10, 20);
+      doc.text(`Contact: ${countryCode} ${contact}`, 10, 30);
+      doc.text(`Email: ${email}`, 10, 40);
+      doc.text(`LinkedIn: ${linkedin}`, 10, 50);
+      doc.text(`Professional Summary: ${summary}`, 10, 60);
+      doc.text(`Skills: ${skills}`, 10, 70);
+      doc.text(`Certifications: ${certifications}`, 10, 80);
+      doc.text(`Projects: ${projects}`, 10, 90);
+      doc.text(`Languages: ${languages}`, 10, 100);
+      doc.text(`Publications: ${publications}`, 10, 110);
+
+      doc.save("cv.pdf");
+    }
+  </script>
+</body>
+</html>
