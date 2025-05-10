@@ -65,6 +65,7 @@
       border-radius: 3px;
       cursor: pointer;
       font-size: 12px;
+      margin-top: 10px;
     }
     .remove-btn:hover {
       background-color: #c82333;
@@ -97,12 +98,12 @@
   <!-- Work Experience -->
   <label>Work Experience:</label>
   <div id="experience-container"></div>
-  <button onclick="addDynamicSection('experience')">+ Add Experience</button>
+  <button type="button" onclick="addDynamicSection('experience')">+ Add Experience</button>
 
   <!-- Education -->
   <label>Education:</label>
   <div id="education-container"></div>
-  <button onclick="addDynamicSection('education')">+ Add Education</button>
+  <button type="button" onclick="addDynamicSection('education')">+ Add Education</button>
 
   <!-- Other Sections -->
   <label>Skills:</label>
@@ -114,8 +115,8 @@
   <label>Projects:</label>
   <textarea id="projects"></textarea>
 
-  <button onclick="generateDoc()">Save as DOCX</button>
-  <button onclick="generatePDF()">Save as PDF</button>
+  <button type="button" onclick="generateDoc()">Save as DOCX</button>
+  <button type="button" onclick="generatePDF()">Save as PDF</button>
 
   <script>
     // Initialize TinyMCE for a given textarea
@@ -147,18 +148,18 @@
       div.innerHTML = `
         <label>${type === 'experience' ? 'Work Experience' : 'Education'}:</label>
         <textarea id="${id}"></textarea>
-        <button class="remove-btn" onclick="removeDynamicSection(this)">Remove</button>
+        <button type="button" class="remove-btn" onclick="removeDynamicSection(this)">Remove</button>
       `;
       container.appendChild(div);
-      initTiny(id);
+      initTiny(id); // Initialize TinyMCE for the new textarea
     }
 
     // Remove the parent dynamic section
     function removeDynamicSection(button) {
       const container = button.parentElement;
       const textarea = container.querySelector('textarea');
-      if (tinymce.get(textarea.id)) tinymce.get(textarea.id).remove();
-      container.remove();
+      if (tinymce.get(textarea.id)) tinymce.get(textarea.id).remove(); // Remove TinyMCE instance
+      container.remove(); // Remove the dynamic section from the DOM
     }
 
     // Collect form data and generate a DOCX file
