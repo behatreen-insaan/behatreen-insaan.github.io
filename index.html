@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>CV Builder</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.5.0/docx.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp39caeutkzjqp3ws4g/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
   <style>
@@ -82,99 +80,9 @@
   <label>Publications (for academics):</label>
   <textarea id="publications"></textarea>
 
-  <button onclick="generateDocx()">Save as DOCX</button>
   <button onclick="generatePDF()">Save as PDF</button>
 
   <script>
-    async function generateDocx() {
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
-      const doc = new Document();
-
-      // Get the values for dynamic fields
-      const name = document.getElementById('name').value;
-      const contact = document.getElementById('country-code').value + ' ' + document.getElementById('contact').value;
-      const email = document.getElementById('email').value;
-      const socialMedia = document.getElementById('social-media').value;
-      const summary = document.getElementById('summary').value;
-      const skills = document.getElementById('skills').value;
-      const certifications = document.getElementById('certifications').value;
-      const projects = document.getElementById('projects').value;
-      const languages = document.getElementById('languages').value;
-      const publications = document.getElementById('publications').value;
-
-      // Work experience and education entries
-      const workExperience = Array.from(document.getElementsByClassName('work-experience')).map(work => ({
-        title: work.querySelector('input:nth-child(1)').value,
-        company: work.querySelector('input:nth-child(2)').value,
-        fromDate: work.querySelector('input:nth-child(3)').value,
-        toDate: work.querySelector('input:nth-child(4)').value,
-      }));
-
-      const educationEntries = Array.from(document.getElementsByClassName('education')).map(edu => ({
-        degree: edu.querySelector('input:nth-child(1)').value,
-        institution: edu.querySelector('input:nth-child(2)').value,
-        startDate: edu.querySelector('input:nth-child(3)').value,
-        endDate: edu.querySelector('input:nth-child(4)').value,
-      }));
-
-      const children = [];
-
-      // Add basic information (Name, Contact, Email, Social Media)
-      children.push(new Paragraph({ text: name, heading: HeadingLevel.HEADING_1 }));
-      children.push(new Paragraph(`Contact: ${contact}`));
-      children.push(new Paragraph(`Email: ${email}`));
-      children.push(new Paragraph(`Social Media: ${socialMedia}`));
-
-      // Add Professional Summary
-      if (summary.trim()) {
-        children.push(new Paragraph({ text: 'Professional Summary', heading: HeadingLevel.HEADING_2 }));
-        children.push(new Paragraph({ text: summary }));
-      }
-
-      // Add Work Experience
-      if (workExperience.length > 0) {
-        children.push(new Paragraph({ text: 'Work Experience', heading: HeadingLevel.HEADING_2 }));
-        workExperience.forEach(work => {
-          children.push(new Paragraph({ text: `${work.title} at ${work.company} (${work.fromDate} to ${work.toDate})` }));
-        });
-      }
-
-      // Add Education
-      if (educationEntries.length > 0) {
-        children.push(new Paragraph({ text: 'Education', heading: HeadingLevel.HEADING_2 }));
-        educationEntries.forEach(edu => {
-          children.push(new Paragraph({ text: `${edu.degree} from ${edu.institution} (${edu.startDate} to ${edu.endDate})` }));
-        });
-      }
-
-      // Add Skills, Certifications, Projects, Languages, and Publications
-      if (skills.trim()) {
-        children.push(new Paragraph({ text: 'Skills', heading: HeadingLevel.HEADING_2 }));
-        children.push(new Paragraph({ text: skills }));
-      }
-      if (certifications.trim()) {
-        children.push(new Paragraph({ text: 'Certifications', heading: HeadingLevel.HEADING_2 }));
-        children.push(new Paragraph({ text: certifications }));
-      }
-      if (projects.trim()) {
-        children.push(new Paragraph({ text: 'Projects', heading: HeadingLevel.HEADING_2 }));
-        children.push(new Paragraph({ text: projects }));
-      }
-      if (languages.trim()) {
-        children.push(new Paragraph({ text: 'Languages', heading: HeadingLevel.HEADING_2 }));
-        children.push(new Paragraph({ text: languages }));
-      }
-      if (publications.trim()) {
-        children.push(new Paragraph({ text: 'Publications', heading: HeadingLevel.HEADING_2 }));
-        children.push(new Paragraph({ text: publications }));
-      }
-
-      // Generate and save the document
-      doc.addSection({ children });
-      const blob = await Packer.toBlob(doc);
-      saveAs(blob, "CV.docx");
-    }
-
     async function generatePDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -190,6 +98,20 @@
       const projects = document.getElementById('projects').value;
       const languages = document.getElementById('languages').value;
       const publications = document.getElementById('publications').value;
+
+      const workExperience = Array.from(document.getElementsByClassName('work-experience')).map(work => ({
+        title: work.querySelector('input:nth-child(1)').value,
+        company: work.querySelector('input:nth-child(2)').value,
+        fromDate: work.querySelector('input:nth-child(3)').value,
+        toDate: work.querySelector('input:nth-child(4)').value,
+      }));
+
+      const educationEntries = Array.from(document.getElementsByClassName('education')).map(edu => ({
+        degree: edu.querySelector('input:nth-child(1)').value,
+        institution: edu.querySelector('input:nth-child(2)').value,
+        startDate: edu.querySelector('input:nth-child(3)').value,
+        endDate: edu.querySelector('input:nth-child(4)').value,
+      }));
 
       let y = 10;
 
@@ -215,8 +137,77 @@
         y += 10;
       }
 
-      // Add Work Experience and Education dynamically (similar to how we did in docx)
-      // Add other sections (Skills, Certifications, etc.)
+      // Add Work Experience
+      if (workExperience.length > 0) {
+        doc.setFontSize(14);
+        doc.text("Work Experience:", 10, y);
+        y += 7;
+        workExperience.forEach(work => {
+          doc.setFontSize(12);
+          doc.text(`${work.title} at ${work.company} (${work.fromDate} to ${work.toDate})`, 10, y);
+          y += 7;
+        });
+        y += 10;
+      }
+
+      // Add Education
+      if (educationEntries.length > 0) {
+        doc.setFontSize(14);
+        doc.text("Education:", 10, y);
+        y += 7;
+        educationEntries.forEach(edu => {
+          doc.setFontSize(12);
+          doc.text(`${edu.degree} from ${edu.institution} (${edu.startDate} to ${edu.endDate})`, 10, y);
+          y += 7;
+        });
+        y += 10;
+      }
+
+      // Add Skills, Certifications, Projects, Languages, and Publications
+      if (skills.trim()) {
+        doc.setFontSize(14);
+        doc.text("Skills:", 10, y);
+        y += 7;
+        doc.setFontSize(12);
+        doc.text(skills, 10, y);
+        y += 10;
+      }
+
+      if (certifications.trim()) {
+        doc.setFontSize(14);
+        doc.text("Certifications:", 10, y);
+        y += 7;
+        doc.setFontSize(12);
+        doc.text(certifications, 10, y);
+        y += 10;
+      }
+
+      if (projects.trim()) {
+        doc.setFontSize(14);
+        doc.text("Projects:", 10, y);
+        y += 7;
+        doc.setFontSize(12);
+        doc.text(projects, 10, y);
+        y += 10;
+      }
+
+      if (languages.trim()) {
+        doc.setFontSize(14);
+        doc.text("Languages:", 10, y);
+        y += 7;
+        doc.setFontSize(12);
+        doc.text(languages, 10, y);
+        y += 10;
+      }
+
+      if (publications.trim()) {
+        doc.setFontSize(14);
+        doc.text("Publications:", 10, y);
+        y += 7;
+        doc.setFontSize(12);
+        doc.text(publications, 10, y);
+        y += 10;
+      }
 
       doc.save("CV.pdf");
     }
