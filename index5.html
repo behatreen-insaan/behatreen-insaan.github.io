@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CV Builder</title>
-  <!-- Include TinyMCE -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@7.5.0/build/index.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.tiny.cloud/1/hk4nb8y38mlhe25ff58ya0ayvywzctp39caeutkzjqp3ws4g/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
   <style>
     body {
@@ -23,7 +24,7 @@
       display: block;
       margin-top: 20px;
     }
-    textarea, input {
+    textarea, input, select {
       width: 100%;
       margin-top: 8px;
       padding: 10px;
@@ -52,17 +53,17 @@
       background-color: #0056b3;
     }
     .dynamic-group {
-      margin-top: 15px;
+      position: relative;
+      margin-top: 10px;
     }
     .remove-btn {
+      margin-top: 10px;
       background-color: #dc3545;
       color: white;
       border: none;
-      padding: 5px 10px;
-      border-radius: 3px;
+      padding: 10px 20px;
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 12px;
-      margin-top: 10px;
     }
     .remove-btn:hover {
       background-color: #c82333;
@@ -72,7 +73,6 @@
 <body>
   <h1>CV Builder</h1>
 
-  <!-- Personal Details -->
   <label>Name:</label>
   <input type="text" id="name">
 
@@ -88,21 +88,19 @@
   <label>LinkedIn:</label>
   <input type="text" id="linkedin">
 
-  <!-- Professional Summary -->
   <label>Professional Summary:</label>
   <textarea id="summary"></textarea>
 
-  <!-- Work Experience -->
   <label>Work Experience:</label>
   <div id="experience-container"></div>
-  <button type="button" onclick="addDynamicSection('experience')">+ Add Experience</button>
+  <button onclick="addSection('experience')">+ Add Experience</button>
+  <button onclick="removeLastSection('experience')" class="remove-btn">− Remove Experience</button>
 
-  <!-- Education -->
   <label>Education:</label>
   <div id="education-container"></div>
-  <button type="button" onclick="addDynamicSection('education')">+ Add Education</button>
+  <button onclick="addSection('education')">+ Add Education</button>
+  <button onclick="removeLastSection('education')" class="remove-btn">− Remove Education</button>
 
-  <!-- Other Sections -->
   <label>Skills:</label>
   <textarea id="skills"></textarea>
 
@@ -112,23 +110,17 @@
   <label>Projects:</label>
   <textarea id="projects"></textarea>
 
-  <button type="button" onclick="generateDoc()">Save as DOCX</button>
-  <button type="button" onclick="generatePDF()">Save as PDF</button>
+  <label>Languages:</label>
+  <textarea id="languages"></textarea>
+
+  <label>Publications:</label>
+  <textarea id="publications"></textarea>
+
+  <button onclick="generateDoc()">Save as DOCX</button>
+  <button onclick="generatePDF()">Save as PDF</button>
 
   <script>
-    // Ensure TinyMCE is loaded before using it
-    document.addEventListener('DOMContentLoaded', () => {
-      // Initialize TinyMCE for pre-defined IDs
-      ['summary', 'skills', 'certifications', 'projects'].forEach(id => initTiny(id));
-    });
-
-    // Initialize TinyMCE for a given textarea
     function initTiny(id) {
-      if (typeof tinymce === 'undefined') {
-        console.error('TinyMCE is not loaded');
-        return;
-      }
-
       tinymce.init({
         selector: `#${id}`,
         menubar: false,
@@ -142,37 +134,125 @@
       });
     }
 
-    // Add a dynamic section for Work Experience or Education
-    function addDynamicSection(type) {
+    document.addEventListener('DOMContentLoaded', () => {
+      ['summary', 'skills', 'certifications', 'projects', 'languages', 'publications'].forEach(id => initTiny(id));
+    });
+
+    const addSection = (type) => {
       const container = document.getElementById(`${type}-container`);
       const id = `${type}-${Date.now()}`;
       const div = document.createElement('div');
       div.className = 'dynamic-group';
       div.innerHTML = `
-        <label>${type === 'experience' ? 'Work Experience' : 'Education'}:</label>
         <textarea id="${id}"></textarea>
-        <button type="button" class="remove-btn" onclick="removeDynamicSection(this)">Remove</button>
       `;
       container.appendChild(div);
-      initTiny(id); // Initialize TinyMCE for the new textarea
-    }
+      initTiny(id);
+    };
 
-    // Remove the parent dynamic section
-    function removeDynamicSection(button) {
-      const container = button.parentElement;
-      const textarea = container.querySelector('textarea');
-      if (tinymce.get(textarea.id)) tinymce.get(textarea.id).remove(); // Remove TinyMCE instance
-      container.remove(); // Remove the dynamic section from the DOM
-    }
+    const removeLastSection = (type) => {
+      const container = document.getElementById(`${type}-container`);
+      const groups = container.querySelectorAll('.dynamic-group');
+      if (groups.length > 0) {
+        const lastGroup = groups[groups.length - 1];
+        const textarea = lastGroup.querySelector('textarea');
+        if (tinymce.get(textarea.id)) tinymce.get(textarea.id).remove();
+        container.removeChild(lastGroup);
+      }
+    };
 
     function generateDoc() {
-      // Your DOCX generation logic here
-      console.log('DOCX generation triggered!');
+      const name = document.getElementById("name").value;
+      const contact = document.getElementById("contact").value;
+      const countryCode = document.getElementById("countryCode").value;
+      const email = document.getElementById("email").value;
+      const linkedin = document.getElementById("linkedin").value;
+      const summary = tinymce.get("summary").getContent();
+      const skills = tinymce.get("skills").getContent();
+      const certifications = tinymce.get("certifications").getContent();
+      const projects = tinymce.get("projects").getContent();
+      const languages = tinymce.get("languages").getContent();
+      const publications = tinymce.get("publications").getContent();
+
+      let workExperience = [];
+      document.querySelectorAll("#experience-container .dynamic-group textarea").forEach((textarea) => {
+        workExperience.push(tinymce.get(textarea.id).getContent());
+      });
+
+      let education = [];
+      document.querySelectorAll("#education-container .dynamic-group textarea").forEach((textarea) => {
+        education.push(tinymce.get(textarea.id).getContent());
+      });
+
+      const doc = new docx.Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new docx.Paragraph({ text: `Name: ${name}`, bold: true }),
+              new docx.Paragraph({ text: `Contact: ${countryCode} ${contact}` }),
+              new docx.Paragraph({ text: `Email: ${email}` }),
+              new docx.Paragraph({ text: `LinkedIn: ${linkedin}` }),
+              new docx.Paragraph({ text: "Professional Summary:", bold: true }),
+              new docx.Paragraph({ text: summary }),
+              new docx.Paragraph({ text: "Skills:", bold: true }),
+              new docx.Paragraph({ text: skills }),
+              new docx.Paragraph({ text: "Certifications:", bold: true }),
+              new docx.Paragraph({ text: certifications }),
+              new docx.Paragraph({ text: "Projects:", bold: true }),
+              new docx.Paragraph({ text: projects }),
+              new docx.Paragraph({ text: "Languages:", bold: true }),
+              new docx.Paragraph({ text: languages }),
+              new docx.Paragraph({ text: "Publications:", bold: true }),
+              new docx.Paragraph({ text: publications }),
+              new docx.Paragraph({ text: "Work Experience:", bold: true }),
+              ...workExperience.map((exp, idx) => new docx.Paragraph({ text: `${idx + 1}. ${exp}` })),
+              new docx.Paragraph({ text: "Education:", bold: true }),
+              ...education.map((edu, idx) => new docx.Paragraph({ text: `${idx + 1}. ${edu}` })),
+            ],
+          },
+        ],
+      });
+
+      docx.Packer.toBlob(doc).then((blob) => {
+        saveAs(blob, "cv.docx");
+      });
     }
 
     function generatePDF() {
-      // Your PDF generation logic here
-      console.log('PDF generation triggered!');
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const name = document.getElementById("name").value;
+      const contact = document.getElementById("contact").value;
+      const countryCode = document.getElementById("countryCode").value;
+      const email = document.getElementById("email").value;
+      const linkedin = document.getElementById("linkedin").value;
+      const summary = tinymce.get("summary").getContent();
+      const skills = tinymce.get("skills").getContent();
+      const certifications = tinymce.get("certifications").getContent();
+      const projects = tinymce.get("projects").getContent();
+      const languages = tinymce.get("languages").getContent();
+      const publications = tinymce.get("publications").getContent();
+
+      doc.text(`Name: ${name}`, 10, 10);
+      doc.text(`Contact: ${countryCode} ${contact}`, 10, 20);
+      doc.text(`Email: ${email}`, 10, 30);
+      doc.text(`LinkedIn: ${linkedin}`, 10, 40);
+      doc.text(`Professional Summary:`, 10, 50);
+      doc.text(summary, 10, 60);
+      doc.text(`Skills:`, 10, 70);
+      doc.text(skills, 10, 80);
+      doc.text(`Certifications:`, 10, 90);
+      doc.text(certifications, 10, 100);
+      doc.text(`Projects:`, 10, 110);
+      doc.text(projects, 10, 120);
+      doc.text(`Languages:`, 10, 130);
+      doc.text(languages, 10, 140);
+      doc.text(`Publications:`, 10, 150);
+      doc.text(publications, 10, 160);
+
+      doc.save("cv.pdf");
     }
   </script>
 </body>
